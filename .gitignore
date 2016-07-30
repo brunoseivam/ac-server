@@ -1,0 +1,7 @@
+.cproject
+.project
+.settings/
+wifi_settings.h
+host_esp/
+*bin
+ac*
