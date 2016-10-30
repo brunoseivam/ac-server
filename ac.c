@@ -10,6 +10,13 @@
 #include "led.h"
 #include "wifi_settings.h"
 
+enum command {
+    CMD_SET_ADDR,
+    CMD_SET_ADDR_CSUM,
+    CMD_SEND,
+    CMD_SEND_CSUM,
+};
+
 static volatile os_timer_t heartbeat_timer;
 
 void message_recvd (void *arg, char *data, unsigned short len);
@@ -27,6 +34,7 @@ void setup_socket (void)
     espconn_regist_recvcb(conn, message_recvd);
     espconn_accept(conn);
     espconn_regist_time(conn, 15, 0); // timeout (seconds)
+    os_printf("Socket setup finished\n");
 }
 
 void setup_wifi (void)
@@ -39,6 +47,7 @@ void setup_wifi (void)
     wifi_set_opmode(STATION_MODE);
     wifi_station_set_config(&station_conf);
     wifi_station_connect();
+    os_printf("WiFi setup finished\n");
 }
 
 void message_recvd (void *arg, char *data, unsigned short len)
@@ -48,9 +57,41 @@ void message_recvd (void *arg, char *data, unsigned short len)
     if(!len)
         return;
 
-    uint8_t cmd = data[0];
-    os_printf("Got command 0x%02X\n", cmd);
-    ir_send(cmd);
+    os_printf("Message = [ ");
+    unsigned short i;
+    for(i = 0; i < len; ++i)
+        os_printf("%02X ", data[i]);
+    os_printf("]\n");
+
+    switch(data[0]) {
+    case CMD_SET_ADDR:
+        if(len != 2)
+            os_printf("Invalid SET_ADDR command\n");
+        else
+            ir_set_address(data[1]);
+        break;
+    case CMD_SET_ADDR_CSUM:
+        if(len != 3)
+            os_printf("Invalid SET_ADDR_CSUM command\n");
+        else
+            ir_set_address_csum(data[1], data[2]);
+        break;
+
+    case CMD_SEND:
+        if(len != 2)
+            os_printf("Invalid SEND command\n");
+        else
+            ir_send(data[1]);
+        break;
+    case CMD_SEND_CSUM:
+        if(len != 3)
+            os_printf("Invalid SEND_CSUM command\n");
+        else
+            ir_send_csum(data[1], data[2]);
+        break;
+    default:
+        os_printf("Invalid command %02X\n", data[0]);
+    }
 }
 
 void hearbeat (void *args)
@@ -63,6 +104,7 @@ void user_init (void)
     gpio_init();
 
     uart_div_modify(0, UART_CLK_FREQ / 115200);
+    os_printf("Initializing...\n");
     led_init();
     ir_init();
 

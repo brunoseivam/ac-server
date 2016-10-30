@@ -1,5 +1,6 @@
 #include "led.h"
 #include "gpio.h"
+#include "osapi.h"
 
 /*
  * LED Pin: Oak's P1 = ESP's GPIO5
@@ -17,6 +18,7 @@
 void led_init (void)
 {
     gpio_output_set(0, 0, LED_IO_MASK, 0);
+    os_printf("LED initialized\n");
 }
 
 void led_toggle (void)

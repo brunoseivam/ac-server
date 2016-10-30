@@ -30,6 +30,8 @@
 // Header: mark+space(2), each bit: mark+space(2*32bits=64), trail:mark+space(2)
 #define NTRAINS     (2+64+2)
 
+static uint16_t address = 0x10AF;
+
 // PWM doesn't work, so let's lower the level
 static void ICACHE_FLASH_ATTR ir_do_send(uint32_t data[NTRAINS])
 {
@@ -62,9 +64,20 @@ static void ICACHE_FLASH_ATTR ir_do_send(uint32_t data[NTRAINS])
     xthal_set_intenable(intmask);
 }
 
+void ir_set_address_csum(uint8_t addr, uint8_t csum)
+{
+    address = ((uint16_t)addr << 8) | ((uint16_t)csum);
+}
+
+void ir_set_address(uint8_t addr)
+{
+    ir_set_address_csum(addr, ~addr);
+}
+
 void ir_init (void)
 {
     gpio_output_set(0, 0, IR_IO_MASK, 0);
+    os_printf("IR initialized\n");
 }
 
 void ir_set(bool on)
@@ -76,10 +89,10 @@ void ir_set(bool on)
 }
 
 // Build pulse trains list
-void ir_send (uint8_t command)
+void ir_send_csum (uint8_t command, uint8_t csum)
 {
-    uint8_t csum = ~command;
-    uint32_t data = 0x10AF0000 | ((uint32_t)command << 8) | (uint32_t)csum;
+    uint32_t data = ((uint32_t)address << 16) | ((uint32_t)command << 8) | (uint32_t)csum;
+    os_printf("Sending %08X\n", data);
 
     unsigned int trains[2+64+2];
 
@@ -100,3 +113,7 @@ void ir_send (uint8_t command)
     ir_do_send(trains);
 }
 
+void ir_send(uint8_t command)
+{
+    ir_send_csum(command, ~command);
+}
