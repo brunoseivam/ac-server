@@ -54,43 +54,75 @@ void message_recvd (void *arg, char *data, unsigned short len)
 {
     struct espconn *conn = (struct espconn *) arg;
 
-    if(!len)
-        return;
-
     os_printf("Message = [ ");
     unsigned short i;
     for(i = 0; i < len; ++i)
         os_printf("%02X ", data[i]);
     os_printf("]\n");
 
-    switch(data[0]) {
-    case CMD_SET_ADDR:
-        if(len != 2)
-            os_printf("Invalid SET_ADDR command\n");
-        else
-            ir_set_address(data[1]);
-        break;
-    case CMD_SET_ADDR_CSUM:
-        if(len != 3)
-            os_printf("Invalid SET_ADDR_CSUM command\n");
-        else
-            ir_set_address_csum(data[1], data[2]);
-        break;
+    while(len)
+    {
+        switch(data[0]) {
 
-    case CMD_SEND:
-        if(len != 2)
-            os_printf("Invalid SEND command\n");
-        else
-            ir_send(data[1]);
-        break;
-    case CMD_SEND_CSUM:
-        if(len != 3)
-            os_printf("Invalid SEND_CSUM command\n");
-        else
-            ir_send_csum(data[1], data[2]);
-        break;
-    default:
-        os_printf("Invalid command %02X\n", data[0]);
+        case CMD_SET_ADDR:
+            if(len < 2)
+            {
+                os_printf("Invalid SET_ADDR command\n");
+                return;
+            }
+            else
+            {
+                ir_set_address(data[1]);
+                len -= 2;
+                data += 2;
+            }
+            break;
+
+        case CMD_SET_ADDR_CSUM:
+            if(len < 3)
+            {
+                os_printf("Invalid SET_ADDR_CSUM command\n");
+                return;
+            }
+            else
+            {
+                ir_set_address_csum(data[1], data[2]);
+                len -= 3;
+                data += 3;
+            }
+            break;
+
+        case CMD_SEND:
+            if(len < 2)
+            {
+                os_printf("Invalid SEND command\n");
+                return;
+            }
+            else
+            {
+                ir_send(data[1]);
+                len -= 2;
+                data += 2;
+            }
+            break;
+
+        case CMD_SEND_CSUM:
+            if(len < 3)
+            {
+                os_printf("Invalid SEND_CSUM command\n");
+                return;
+            }
+            else
+            {
+                ir_send_csum(data[1], data[2]);
+                len -= 3;
+                data += 3;
+            }
+            break;
+
+        default:
+            os_printf("Invalid command %02X\n", data[0]);
+        }
     }
 }
 

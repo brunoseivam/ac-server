@@ -64,9 +64,34 @@ static void ICACHE_FLASH_ATTR ir_do_send(uint32_t data[NTRAINS])
     xthal_set_intenable(intmask);
 }
 
+// Build pulse trains list
+static void ir_do_send_data (uint32_t data)
+{
+    os_printf("Sending %08X\n", data);
+
+    unsigned int trains[2+64+2];
+
+    unsigned int *datap = trains;
+    *datap++ = HDR_MARK;
+    *datap++ = HDR_SPACE;
+
+    uint32_t mask;
+    for(mask = 1UL << 31; mask; mask >>= 1)
+    {
+        *datap++ = BIT_MARK;
+        *datap++ = data & mask ? ONE_SPACE : ZERO_SPACE;
+    }
+
+    *datap++ = BIT_MARK;
+    *datap++ = 0;
+
+    ir_do_send(trains);
+}
+
 void ir_set_address_csum(uint8_t addr, uint8_t csum)
 {
     address = ((uint16_t)addr << 8) | ((uint16_t)csum);
+    os_printf("IR address and csum are now %04X\n", address);
 }
 
 void ir_set_address(uint8_t addr)
@@ -92,25 +117,8 @@ void ir_set(bool on)
 void ir_send_csum (uint8_t command, uint8_t csum)
 {
     uint32_t data = ((uint32_t)address << 16) | ((uint32_t)command << 8) | (uint32_t)csum;
-    os_printf("Sending %08X\n", data);
-
-    unsigned int trains[2+64+2];
-
-    unsigned int *datap = trains;
-    *datap++ = HDR_MARK;
-    *datap++ = HDR_SPACE;
-
-    uint32_t mask;
-    for(mask = 1UL << 31; mask; mask >>= 1)
-    {
-        *datap++ = BIT_MARK;
-        *datap++ = data & mask ? ONE_SPACE : ZERO_SPACE;
-    }
-
-    *datap++ = BIT_MARK;
-    *datap++ = 0;
-
-    ir_do_send(trains);
+    ir_do_send_data(data);
+    ir_do_send_data(0xFFFFFFFF);
 }
 
 void ir_send(uint8_t command)
