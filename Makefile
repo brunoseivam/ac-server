@@ -17,6 +17,6 @@ led.o: led.c
 
 flash: ac-0x00000.bin
 	esptool.py --port /dev/ttyUSB0 --baud 230400 write_flash -fs 32m 0 ac-0x00000.bin 0x40000 ac-0x40000.bin
-	
+
 clean:
-	rm -f ac ac.o ac-0x00000.bin ac-0x40000.bin host_esp/ac*bin
+	rm -f ac ir.o led.o ac.o ac-0x00000.bin ac-0x40000.bin host_esp/ac*bin
